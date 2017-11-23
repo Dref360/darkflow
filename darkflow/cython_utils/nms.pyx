@@ -60,7 +60,7 @@ cdef float box_iou_c(float ax, float ay, float aw, float ah, float bx, float by,
 @cython.boundscheck(False) # turn off bounds-checking for entire function
 @cython.wraparound(False)  # turn off negative index wrapping for entire function
 @cython.cdivision(True)
-cdef NMS(float[:, ::1] final_probs , float[:, ::1] final_bbox):
+cdef NMS(float[:, ::1] final_probs , float[:, ::1] final_bbox,float[:, ::1] angle_bbox):
     cdef list boxes = list()
     cdef set indices = set()
     cdef:
@@ -88,6 +88,7 @@ cdef NMS(float[:, ::1] final_probs , float[:, ::1] final_bbox):
                 bb.w = final_bbox[index, 2]
                 bb.h = final_bbox[index, 3]
                 bb.c = final_bbox[index, 4]
+                bb.angle = angle_bbox[index,0]
                 bb.probs = np.asarray(final_probs[index,:])
                 boxes.append(bb)
                 indices.add(index)

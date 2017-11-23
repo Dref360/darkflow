@@ -3,10 +3,9 @@ import numpy as np
 import cv2
 import os
 
-labels20 = ["aeroplane", "bicycle", "bird", "boat", "bottle",
-    "bus", "car", "cat", "chair", "cow", "diningtable", "dog",
-    "horse", "motorbike", "person", "pottedplant", "sheep", "sofa",
-    "train", "tvmonitor"]
+labels20 = ["articulated_truck", "bicycle", "bus", "car", "motorcycle",
+               "non-motorized_vehicle", "motorized_vehicle",
+               "pedestrian", "pickup_truck", "single_unit_truck", "work_van"]
 
 # 8, 14, 15, 19
 

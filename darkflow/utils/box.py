@@ -4,6 +4,7 @@ class BoundBox:
     def __init__(self, classes):
         self.x, self.y = float(), float()
         self.w, self.h = float(), float()
+        self.angle = float()
         self.c = float()
         self.class_num = classes
         self.probs = np.zeros((classes,))

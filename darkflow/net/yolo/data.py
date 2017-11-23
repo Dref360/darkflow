@@ -1,4 +1,4 @@
-from ...utils.pascal_voc_clean_xml import pascal_voc_clean_xml
+from ...utils.mio_tcd import mio_tcd_loading
 from numpy.random import permutation as perm
 from .predict import preprocess
 # from .misc import show
@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 import os 
 
-def parse(self, exclusive = False):
+def parse(self, exclusive = False,mode="train"):
     meta = self.meta
     ext = '.parsed'
     ann = self.FLAGS.annotation
@@ -15,7 +15,7 @@ def parse(self, exclusive = False):
         msg = 'Annotation directory not found {} .'
         exit('Error: {}'.format(msg.format(ann)))
     print('\n{} parsing {}'.format(meta['model'], ann))
-    dumps = pascal_voc_clean_xml(ann, meta['labels'], exclusive)
+    dumps = mio_tcd_loading(ann, meta['labels'], exclusive, mode)
     return dumps
 
 

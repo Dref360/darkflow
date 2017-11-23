@@ -48,4 +48,4 @@ def yolo_box_constructor(meta,np.ndarray[float] net_out, float threshold):
                     final_probs[grid, b, class_loop] = probs[grid, class_loop]
     
     
-    return NMS(np.ascontiguousarray(final_probs).reshape(SS*B, C) , np.ascontiguousarray(coords).reshape(SS*B, 4))
+    return NMS(np.ascontiguousarray(final_probs).reshape(SS*B, C) , np.ascontiguousarray(coords).reshape(SS*B, 4),np.ascontiguousarray(coords).reshape(SS*B, 4))

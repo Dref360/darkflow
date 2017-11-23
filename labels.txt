@@ -1,4 +1,11 @@
-aeroplane
+articulated_truck
 bicycle
-bird
-boat
+bus
+car
+motorcycle
+non-motorized_vehicle
+motorized_vehicle
+pedestrian
+pickup_truck
+single_unit_truck
+work_van

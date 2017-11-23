@@ -46,16 +46,18 @@ def loss(self, net_out):
     _areas = tf.placeholder(tf.float32, size2)
     _upleft = tf.placeholder(tf.float32, size2 + [2])
     _botright = tf.placeholder(tf.float32, size2 + [2])
+    _theta = tf.placeholder(tf.float32, size2)
 
     self.placeholders = {
         'probs':_probs, 'confs':_confs, 'coord':_coord, 'proid':_proid,
-        'areas':_areas, 'upleft':_upleft, 'botright':_botright
+        'areas':_areas, 'upleft':_upleft, 'botright':_botright, 'thetas': _theta
     }
 
     # Extract the coordinate prediction from net.out
-    net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (4 + 1 + C)])
+    net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (4 + 1 + C + 1)])
     coords = net_out_reshape[:, :, :, :, :4]
     coords = tf.reshape(coords, [-1, H*W, B, 4])
+    theta_pred = net_out_reshape[:,:,:,:,-1]
     adjusted_coords_xy = expit_tensor(coords[:,:,:,0:2])
     adjusted_coords_wh = tf.sqrt(tf.exp(coords[:,:,:,2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2]))
     coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)
@@ -63,7 +65,7 @@ def loss(self, net_out):
     adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 4])
     adjusted_c = tf.reshape(adjusted_c, [-1, H*W, B, 1])
 
-    adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 5:])
+    adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 5:-1])
     adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C])
 
     adjusted_net_out = tf.concat([adjusted_coords_xy, adjusted_coords_wh, adjusted_c, adjusted_prob], 3)
@@ -103,5 +105,8 @@ def loss(self, net_out):
     loss = tf.multiply(loss, wght)
     loss = tf.reshape(loss, [-1, H*W*B*(4 + 1 + C)])
     loss = tf.reduce_sum(loss, 1)
+    L_theta = 1 - tf.cos(theta_pred - tf.reshape(_theta,[-1,19,19,5]))
     self.loss = .5 * tf.reduce_mean(loss)
+    self.loss += 50 * tf.reduce_mean(L_theta)
+
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)
