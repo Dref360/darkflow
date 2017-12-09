@@ -9,7 +9,7 @@ import math
 def expit_tensor(x):
 	return 1. / (1. + tf.exp(-x))
 
-USE_REG = True
+USE_REG = False
 
 
 def loss_reg(self, net_out):
@@ -161,7 +161,7 @@ def loss_cat(self, net_out):
     }
 
     # Extract the coordinate prediction from net.out
-    net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (4 + 1 + C + 1)])
+    net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (4 + 1 + C + 8)])
     coords = net_out_reshape[:, :, :, :, :4]
     coords = tf.reshape(coords, [-1, H*W, B, 4])
     theta_pred = net_out_reshape[:,:,:,:,-8:]
@@ -215,7 +215,7 @@ def loss_cat(self, net_out):
     L_theta = tf.nn.softmax_cross_entropy_with_logits(labels=_theta,logits=theta_pred)
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} box loss'.format(m['model']), self.loss)
-    angle_loss = .5 * tf.reduce_mean(tf.reshape(L_theta,[-1,19*19,B]) * _confs)
+    angle_loss = 100 * tf.reduce_mean(tf.reshape(L_theta,[-1,19*19,B]) * ((0.75*_confs) + 0.25*(1-_confs)))
     tf.summary.scalar('{} angle loss'.format(m['model']), self.loss)
     self.loss += angle_loss
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)

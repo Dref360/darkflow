@@ -109,11 +109,11 @@ def mio_tcd_loading(ANN, pick, exclusive=False, mode="train"):
         for cls, cnt in boxes:
             rect = cv2.minAreaRect(np.array(cnt))
             angle = np.radians(rect[-1])
-            box = cv2.boxPoints(rect)
-            box = np.int0(box)
-            xs, ys = list(zip(*box))
-            xn, xx = min(xs), max(xs)
-            yn, yx = min(ys), max(ys)
+            (cx,cy), (w,h), _ = rect
+            xn = cx - w / 2
+            yn = cy - h / 2
+            xx = cx + w / 2
+            yx = cy + h / 2
             cls = normalize_classes(cls)
             name = jsonHandler.classes.index(cls)
             all.append([name, xn, yn, xx, yx,angle])

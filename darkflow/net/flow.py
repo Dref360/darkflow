@@ -5,6 +5,8 @@ import tensorflow as tf
 import pickle
 from multiprocessing.pool import ThreadPool
 
+from darkflow.utils.mio_tcd import JsonHandler
+
 train_stats = (
     'Training statistics: \n'
     '\tLearning rate : {}\n'
@@ -99,8 +101,9 @@ def return_predict(self, im):
 import math
 
 def predict(self):
+    jsonHandler = JsonHandler(self.FLAGS.imgdir)
     inp_path = self.FLAGS.imgdir
-    all_inps = os.listdir(inp_path)
+    all_inps = jsonHandler.gt_test
     all_inps = [i for i in all_inps if self.framework.is_inp(i)]
     if not all_inps:
         msg = 'Failed to find any images in {} .'

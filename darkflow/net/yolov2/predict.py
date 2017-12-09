@@ -4,7 +4,8 @@ import os
 import cv2
 import numpy as np
 
-from ...cython_utils.cy_yolo2_findboxes import box_constructor
+from ...cython_utils.cy_yolo2_findboxes import box_constructor,box_constructor_cls
+from .train import USE_REG
 
 
 def expit(x):
@@ -21,7 +22,10 @@ def findboxes(self, net_out):
     # meta
     meta = self.meta
     boxes = list()
-    boxes = box_constructor(meta, net_out)
+    if USE_REG:
+        boxes = box_constructor(meta, net_out)
+    else:
+        boxes = box_constructor_cls(meta, net_out)
     return boxes
 
 
@@ -48,10 +52,16 @@ def postprocess(self, net_out, im, save=True):
         if boxResults is None:
             continue
         left, right, top, bot, mess, max_indx, confidence, angle = boxResults
+
+        # class 0-7
+        # int(((np.degrees(obj[5]) + 90) % 180) // (180/8))
+        if not USE_REG:
+            angle = (angle * (180 // 8)) - 90
+
         thick = int((h + w) // 300)
         if self.FLAGS.json:
             resultsForJSON.append(
-                {"label": mess, "confidence": float('%.2f' % confidence), "topleft": {"x": left, "y": top}, "bottomright": {"x": right, "y": bot}, 'angle':angle})
+                {"label": mess, "confidence": float('%.2f' % confidence), "topleft": {"x": left, "y": top}, "bottomright": {"x": right, "y": bot}, 'angle':float(angle)})
             continue
 
         cv2.rectangle(imgcv,
