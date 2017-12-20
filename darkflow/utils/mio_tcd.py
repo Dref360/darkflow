@@ -108,9 +108,9 @@ def mio_tcd_loading(ANN, pick, exclusive=False, mode="train"):
         boxes = jsonHandler.datas[fp]
         for cls, cnt in boxes:
             rect = cv2.minAreaRect(np.array(cnt))
-            #angle = np.radians(rect[-1])
-            vx = cv2.fitLine(cnt, cv2.DIST_L2, 0, 0.01, 0.01)[0]
-            angle = np.arccos(np.deg2rad(vx))
+            angle = np.radians(rect[-1])
+            #vx = cv2.fitLine(cnt, cv2.DIST_L2, 0, 0.01, 0.01)[0]
+            #angle = np.arccos(np.deg2rad(vx))
 
             (cx,cy), (w,h), _ = rect
             xn = cx - w / 2
