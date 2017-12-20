@@ -70,8 +70,8 @@ def _batch_cat(self, chunk):
         confs[obj[6], :] = [1.] * B
 
         ## ANGLE
-        angle_cls = int(((np.degrees(obj[5]) + 90) % 180) // (180/8))
-        thetas[obj[6], :] = [gt[angle_cls]] * B
+        angle_cls = int(((np.rad2deg(obj[5]) + 90) % 180) // (180/n_dim))
+        thetas[obj[6], :,angle_cls] = 1.0
 
     # Finalise the placeholders' values
     upleft = np.expand_dims(prear[:, 0:2], 1)
