@@ -200,7 +200,7 @@ def loss_cat(self, net_out):
 
 
     # calculate the best IOU, set 0.0 confidence for worse boxes
-    best_box = tf.equal(loss, tf.reduce_max(loss, [2], True))
+    best_box = tf.equal(loss, tf.reduce_min(loss, [2], True))
     best_box = tf.to_float(best_box)
     confs = tf.multiply(best_box, _confs)
 
