@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+import numpy as np
 
 def expit_tensor(x):
     return 1. / (1. + tf.exp(-x))
@@ -114,7 +114,7 @@ def loss_reg(self, net_out):
 
 
 def se(y_true, y_pred):
-    return tf.square(y_true - y_pred)
+    return tf.reduce_sum(tf.square(y_true - y_pred),-1)
 
 
 def loss_cat(self, net_out):
@@ -140,6 +140,8 @@ def loss_cat(self, net_out):
     print('\tbox     = {}'.format(m['num']))
     print('\tclasses = {}'.format(m['classes']))
     print('\tscales  = {}'.format([sprob, sconf, snoob, scoor]))
+
+    angles = tf.constant([[[np.deg2rad((i * (180//8)) - 90) for i in range(8)]]],tf.float32)
 
     size1 = [None, HW, B, C]
     size2 = [None, HW, B]
@@ -184,11 +186,11 @@ def loss_cat(self, net_out):
     wh = tf.pow(coords[:, :, :, 2:4], 2) * np.reshape([W, H], [1, 1, 1, 2])
     w, h = tf.unstack(wh / 2, 2, -1)
 
-    multinom = tf.distributions.Multinomial(1, theta_pred)
-    theta_pred_sampled = multinom.sample(tf.shape(_areas))
+    multinom = tf.distributions.Multinomial(1., tf.reshape(theta_pred,[-1,H*W,5,8]))
+    theta_pred_sampled = tf.squeeze(multinom.sample(1),0)
 
-    w_trans = w * tf.cos(theta_pred_sampled * MACHIN_A_CHECKER)
-    h_trans = h * tf.sin(theta_pred_sampled * MACHIN_A_CHECKER)
+    w_trans = w * tf.cos(tf.reduce_sum(theta_pred_sampled * angles,-1))
+    h_trans = h * tf.sin(tf.reduce_sum(theta_pred_sampled * angles,-1))
     centers = coords[:, :, :, 0:2]
 
     loss = se(_botright, centers + tf.stack([w_trans, h_trans], -1))
@@ -196,17 +198,6 @@ def loss_cat(self, net_out):
     loss += se(_botleft, centers + tf.stack([-w_trans, h_trans], -1))
     loss += se(_upleft, centers + tf.stack([-w_trans, -h_trans], -1))
 
-    """area_pred = wh[:,:,:,0] * wh[:,:,:,1]
-    
-    floor = centers - (wh * .5)
-    ceil  = centers + (wh * .5)
-
-    # calculate the intersection areas
-    intersect_upleft   = tf.maximum(floor, _upleft)
-    intersect_botright = tf.minimum(ceil , _botright)
-    intersect_wh = intersect_botright - intersect_upleft
-    intersect_wh = tf.maximum(intersect_wh, 0.0)
-    intersect = tf.multiply(intersect_wh[:,:,:,0], intersect_wh[:,:,:,1])"""
 
     # calculate the best IOU, set 0.0 confidence for worse boxes
     best_box = tf.equal(loss, tf.reduce_max(loss, [2], True))

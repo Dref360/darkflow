@@ -56,17 +56,31 @@ def _batch_cat(self, chunk):
     confs = np.zeros([H * W, B])
     coord = np.zeros([H * W, B, 4])
     proid = np.zeros([H * W, B, C])
-    prear = np.zeros([H * W, 4])
+    prear = np.zeros([H * W, 8])
     thetas = np.zeros([H * W, B,n_dim])
     for obj in allobj:
         probs[obj[6], :, :] = [[0.] * C] * B
         probs[obj[6], :, obj[0]] = 1.
         proid[obj[6], :, :] = [[1.] * C] * B
         coord[obj[6], :, :] = [obj[1:5]] * B
-        prear[obj[6], 0] = obj[1] - obj[3] ** 2 * .5 * W  # xleft
-        prear[obj[6], 1] = obj[2] - obj[4] ** 2 * .5 * H  # yup
-        prear[obj[6], 2] = obj[1] + obj[3] ** 2 * .5 * W  # xright
-        prear[obj[6], 3] = obj[2] + obj[4] ** 2 * .5 * H  # ybot
+        angle = obj[5]
+
+        # Top Left
+        prear[obj[6], 0] = obj[1] - (obj[3] ** 2 * .5 * W) * np.cos(angle)  # xleft
+        prear[obj[6], 1] = obj[2] - (obj[4] ** 2 * .5 * H) * np.sin(angle)  # yup
+
+        # bottom Left
+        prear[obj[6], 2] = obj[1] - (obj[3] ** 2 * .5 * W) * np.cos(angle)  # xleft
+        prear[obj[6], 3] = obj[2] + (obj[4] ** 2 * .5 * H) * np.sin(angle)  # down
+
+        # bottom right
+        prear[obj[6], 4] = obj[1] + (obj[3] ** 2 * .5 * W) * np.cos(angle)  # xright
+        prear[obj[6], 5] = obj[2] + (obj[4] ** 2 * .5 * H) * np.sin(angle)  # down
+
+        # top right
+        prear[obj[6], 6] = obj[1] + (obj[3] ** 2 * .5 * W) * np.cos(angle)  # xright
+        prear[obj[6], 7] = obj[2] - (obj[4] ** 2 * .5 * H) * np.sin(angle)  # ytop
+
         confs[obj[6], :] = [1.] * B
 
         ## ANGLE
@@ -75,11 +89,15 @@ def _batch_cat(self, chunk):
 
     # Finalise the placeholders' values
     upleft = np.expand_dims(prear[:, 0:2], 1)
-    botright = np.expand_dims(prear[:, 2:4], 1)
+    botleft = np.expand_dims(prear[:, 2:4], 1)
+    botright = np.expand_dims(prear[:, 4:6], 1)
+    upright = np.expand_dims(prear[:, 6:], 1)
     wh = botright - upleft;
     area = wh[:, :, 0] * wh[:, :, 1]
     upleft = np.concatenate([upleft] * B, 1)
     botright = np.concatenate([botright] * B, 1)
+    botleft = np.concatenate([botleft] * B, 1)
+    upright = np.concatenate([upright] * B, 1)
     areas = np.concatenate([area] * B, 1)
     # thetas = np.expand_dims(thetas,-1)
 
@@ -90,7 +108,8 @@ def _batch_cat(self, chunk):
         'probs': probs, 'confs': confs,
         'coord': coord, 'proid': proid,
         'areas': areas, 'upleft': upleft,
-        'botright': botright, 'thetas': thetas
+        'botright': botright, 'thetas': thetas,
+        'upright': upright, 'botleft':botleft
     }
 
     return inp_feed_val, loss_feed_val
