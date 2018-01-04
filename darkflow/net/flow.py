@@ -53,7 +53,9 @@ def train(self):
         fetches = [self.train_op, loss_op, self.summary_op] 
         fetched = self.sess.run(fetches, feed_dict)
         loss = fetched[1]
-
+        if np.isnan(loss):
+            print("NAN")
+            return
         if loss_mva is None: loss_mva = loss
         loss_mva = .9 * loss_mva + .1 * loss
         step_now = self.FLAGS.load + i + 1
