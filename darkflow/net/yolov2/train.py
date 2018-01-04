@@ -107,7 +107,7 @@ def loss_reg(self, net_out):
     L_theta = 1 - tf.cos(theta_pred - tf.reshape(_theta, [-1, 19, 19, 5]))
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} box loss'.format(m['model']), self.loss)
-    angle_loss = 50 * tf.reduce_mean(tf.reshape(L_theta, [-1, 19 * 19, B]) * _confs)
+    angle_loss = 100 * tf.reduce_mean(tf.reshape(L_theta, [-1, 19 * 19, B]) * _confs)
     tf.summary.scalar('{} angle loss'.format(m['model']), self.loss)
     self.loss += angle_loss
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)
@@ -141,7 +141,7 @@ def loss_cat(self, net_out):
     print('\tclasses = {}'.format(m['classes']))
     print('\tscales  = {}'.format([sprob, sconf, snoob, scoor]))
 
-    angles = tf.constant([[[np.deg2rad((i * (180//8)) - 90) for i in range(8)]]],tf.float32)
+    angles = tf.constant([[[np.deg2rad(((i +0.5) * (180/8)) - 90) for i in range(8)]]],tf.float32)
 
     size1 = [None, HW, B, C]
     size2 = [None, HW, B]
@@ -223,7 +223,7 @@ def loss_cat(self, net_out):
     L_theta = tf.nn.softmax_cross_entropy_with_logits(labels=_theta, logits=theta_pred)
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} box loss'.format(m['model']), self.loss)
-    angle_loss = 100 * tf.reduce_mean(tf.reshape(L_theta, [-1, 19 * 19, B]) * ((0.75 * _confs) + 0.25 * (1 - _confs)))
+    angle_loss = 5 * tf.reduce_mean(tf.reshape(L_theta, [-1, 19 * 19, B]) * ((0.75 * _confs) + 0.25 * (1 - _confs)))
     tf.summary.scalar('{} angle loss'.format(m['model']), self.loss)
     self.loss += angle_loss
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)
