@@ -109,10 +109,10 @@ def loss_reg(self, net_out):
     loss = tf.multiply(loss, wght)
     loss = tf.reshape(loss, [-1, H * W * B * (4 + 1 + C)])
     loss = tf.reduce_sum(loss, 1)
-    L_theta = 1 - tf.cos((theta_pred - _theta) * (np.pi /2))
+    L_theta = tf.square((theta_pred - _theta) * (np.pi /2))
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} box loss'.format(m['model']), self.loss)
-    angle_loss = 5 * tf.reduce_mean(tf.reshape(L_theta, [-1, 19 * 19, B]) * ((0.75 * _confs) + 0.25 * (1 - _confs)))
+    angle_loss = tf.reduce_mean(tf.reshape(L_theta, [-1, 19 * 19, B]) * ((0.75 * _confs) + 0.25 * (1 - _confs)))
     tf.summary.scalar('{} angle loss'.format(m['model']), self.loss)
     self.loss += angle_loss
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)

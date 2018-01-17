@@ -57,6 +57,8 @@ def postprocess(self, net_out, im, save=True):
         # int(((np.degrees(obj[5]) + 90) % 180) // (180/8))
         if not USE_REG:
             angle = (angle * (180 // 8)) - 90
+        else:
+            angle *= 90
 
         thick = int((h + w) // 300)
         if self.FLAGS.json:
