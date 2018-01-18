@@ -5,6 +5,8 @@ parse PASCAL VOC xml annotations
 import os
 from collections import OrderedDict
 
+import h5py
+
 pjoin = os.path.join
 import json
 import csv
@@ -13,7 +15,7 @@ from PIL import Image
 import numpy as np
 import cv2
 import pickle
-PATH = "data.pkl"
+PATH = "data{}.pkl"
 
 def _pp(l):  # pretty printing
     for i in l: print('{}: {}'.format(i, l[i]))
@@ -28,6 +30,24 @@ def normalize_classes(cls):
            'single unit truck': 'single_unit_truck',
            'work van': 'work_van', 'suv': 'car', 'minivan': 'car'}
     return dat[cls] if cls in dat else cls
+
+class H5Handler():
+    def __init__(self,path):
+        self.path = path
+        self.train_h5 = pjoin(path,'train.h5')
+        self.test_h5 = pjoin(path,'test.h5')
+        self.trainfile = None
+        self.testfile = None
+
+    def __getitem__(self, item):
+        is_train,idx = item
+        if is_train:
+            if self.trainfile is None:
+                self.trainfile = h5py.File(self.train_h5, 'r')
+            return list(zip(self.trainfile[idx]['mean_angs'],self.trainfile[idx]['mean_mags']))
+        if self.testfile is None:
+            self.testfile = h5py.File(self.test_h5, 'r')
+        return list(zip(self.testfile[idx]['mean_angs'],self.testfile[idx]['mean_mags']))
 
 
 class JsonHandler():
@@ -92,31 +112,44 @@ def mio_tcd_loading_regular(ANN, pick, exclusive=False, mode="train"):
     print('Dataset size: {}'.format(len(dumps)))
     return dumps
 
+def area(polygon):
+    x, y = [sorted(k) for k in zip(*polygon)]
+    # x = [xi / fx for xi in x]
+    # y = [yi / fy for yi in y]
+    xmin, xmax = x[0], x[-1]
+    ymin, ymax = y[0], y[-1]
+    return (xmax - xmin) * (ymax - ymin)
+
+def find_data(handler, ang_getter, is_train):
+    for k in handler.gt_train if is_train else handler.gt_test:
+        acc = []
+        for (cls, polygons), (ang, mag) in zip(handler.datas[k][1], ang_getter[(is_train, k.split('/')[-1][:-4])]):
+            if mag < 1.:
+                ang = 0.
+            acc.append((handler.classes.index(normalize_classes(cls)), ang, polygons))
+        yield (k,acc)
 
 def mio_tcd_loading(ANN, pick, exclusive=False, mode="train"):
     print('Parsing for {} {}'.format(
         pick, mode))
 
-    if os.path.exists(PATH):
-        return pickle.load(open(PATH,"rb"))
+    if os.path.exists(PATH.format(mode)):
+        return pickle.load(open(PATH.format(mode),"rb"))
 
     jsonHandler = JsonHandler(ANN)
-    data = jsonHandler.gt_train if mode == "train" else jsonHandler.gt_test
-    dumps = list()
-    for fp in data:
-        all = []
-        boxes = jsonHandler.datas[fp]
-        for cls, cnt in boxes:
-            rect = cv2.minAreaRect(np.array(cnt))
-            angle = np.radians(rect[-1])
-            #vx = cv2.fitLine(cnt, cv2.DIST_L2, 0, 0.01, 0.01)[0]
-            #angle = np.arccos(np.deg2rad(vx))
+    ang_getter = H5Handler(ANN)
+    data = find_data(jsonHandler,ang_getter,mode=='train')
 
-            (cx,cy), (w,h), _ = rect
-            xn = cx - w / 2
-            yn = cy - h / 2
-            xx = cx + w / 2
-            yx = cy + h / 2
+    dumps = list()
+    for fp, boxes in data:
+        all = []
+        for cls,ang, cnt in boxes:
+            angle = ang / (2*np.pi)
+            x_s = sorted([k[0] for k in cnt])
+            y_s = sorted([k[y] for k in cnt])
+
+            xn,xx = x_s[0], x_s[-1]
+            yn,yx = y_s[0], y_s[-1]
             cls = normalize_classes(cls)
             name = jsonHandler.classes.index(cls)
             all.append([name, xn, yn, xx, yx,angle])
@@ -137,6 +170,6 @@ def mio_tcd_loading(ANN, pick, exclusive=False, mode="train"):
     print('\nStatistics:')
     _pp(stat)
     print('Dataset size: {}'.format(len(dumps)))
-    pickle.dump(dumps,open(PATH,"wb"))
+    pickle.dump(dumps,open(PATH.format(mode),"wb"))
 
     return dumps
