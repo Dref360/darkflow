@@ -50,14 +50,16 @@ class H5Handler():
         return list(zip(self.testfile[idx]['mean_angs'],self.testfile[idx]['mean_mags']))
 
 
+
 class JsonHandler():
     classes = ["articulated_truck", "bicycle", "bus", "car", "motorcycle",
                "non-motorized_vehicle", "motorized_vehicle",
                "pedestrian", "pickup_truck", "single_unit_truck", "work_van"]
 
-    def __init__(self, path):
+    def __init__(self, path,by_mio_id=False):
         self.path = path
         self.json = 'internal_cvpr2016.json'
+        self.by_mio_id = by_mio_id
         file = pjoin(self.path, self.json)
         jsonfile = json.load(open(file, "r"), object_pairs_hook=OrderedDict)
         self.datas = OrderedDict([self.__handle_json_inner(v) for v in jsonfile.values()])
@@ -74,7 +76,9 @@ class JsonHandler():
             (x['classification'], x['outline_xy'])
             for x in annotation]
         jpgfile = value['external_id'] + '.jpg'
-        return pjoin(self.path, 'images', jpgfile), polygons
+        if self.by_mio_id:
+            return value['mio_id'],[pjoin(self.path, 'images', jpgfile), polygons]
+        return pjoin(self.path, 'images', jpgfile), [value['mio_id'], polygons]
 
 
 def mio_tcd_loading_regular(ANN, pick, exclusive=False, mode="train"):
@@ -146,13 +150,11 @@ def mio_tcd_loading(ANN, pick, exclusive=False, mode="train"):
         for cls,ang, cnt in boxes:
             angle = ang / (2*np.pi)
             x_s = sorted([k[0] for k in cnt])
-            y_s = sorted([k[y] for k in cnt])
+            y_s = sorted([k[1] for k in cnt])
 
             xn,xx = x_s[0], x_s[-1]
             yn,yx = y_s[0], y_s[-1]
-            cls = normalize_classes(cls)
-            name = jsonHandler.classes.index(cls)
-            all.append([name, xn, yn, xx, yx,angle])
+            all.append([cls, xn, yn, xx, yx,angle])
         im = Image.open(fp)
         dumps.append([fp, [im.width, im.height, all]])
 

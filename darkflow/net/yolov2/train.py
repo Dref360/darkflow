@@ -51,7 +51,7 @@ def loss_reg(self, net_out):
     _areas = tf.placeholder(tf.float32, size2)
     _upleft = tf.placeholder(tf.float32, size2 + [2])
     _botright = tf.placeholder(tf.float32, size2 + [2])
-    _theta = tf.placeholder(tf.float32, size2)
+    _theta = tf.placeholder(tf.float32, size2 + [1])
 
     self.placeholders = {
         'probs': _probs, 'confs': _confs, 'coord': _coord, 'proid': _proid,
@@ -110,10 +110,10 @@ def loss_reg(self, net_out):
     loss = tf.multiply(loss, wght)
     loss = tf.reshape(loss, [-1, H * W * B * (4 + 1 + C)])
     loss = tf.reduce_sum(loss, 1)
-    L_theta = arctan_loss(_theta,theta_pred)
+    L_theta = arctan_loss(_theta,tf.reshape(theta_pred,[-1,19*19,B,1]))
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} box loss'.format(m['model']), self.loss)
-    angle_loss = 0.5 * tf.reduce_mean(tf.reshape(L_theta, [-1, 19 * 19, B]) * _confs)
+    angle_loss = 0.5 * tf.reduce_mean(L_theta * _confs)
     tf.summary.scalar('{} angle loss'.format(m['model']), self.loss)
     self.loss += angle_loss
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)
