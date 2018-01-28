@@ -124,13 +124,19 @@ def area(polygon):
     ymin, ymax = y[0], y[-1]
     return (xmax - xmin) * (ymax - ymin)
 
+def make_bigger(polygon):
+    x, y = [sorted(k) for k in zip(*polygon)]
+    xmin, xmax = x[0], x[-1]
+    ymin, ymax = y[0], y[-1]
+    return [(max(0,xmin-10),max(0,ymin-10)),(xmax+10,ymax+10)]
+
 def find_data(handler, ang_getter, is_train):
     for k in handler.gt_train if is_train else handler.gt_test:
         acc = []
         for (cls, polygons), (ang, mag) in zip(handler.datas[k][1], ang_getter[(is_train, k.split('/')[-1][:-4])]):
             if mag < 1.:
                 ang = 0.
-            acc.append((handler.classes.index(normalize_classes(cls)), ang, polygons))
+            yield (k, (JsonHandler.classes.index(normalize_classes(cls)), ang, polygons))
         yield (k,acc)
 
 def mio_tcd_loading(ANN, pick, exclusive=False, mode="train"):
@@ -154,6 +160,7 @@ def mio_tcd_loading(ANN, pick, exclusive=False, mode="train"):
 
             xn,xx = x_s[0], x_s[-1]
             yn,yx = y_s[0], y_s[-1]
+
             all.append([cls, xn, yn, xx, yx,angle])
         im = Image.open(fp)
         dumps.append([fp, [im.width, im.height, all]])

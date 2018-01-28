@@ -161,7 +161,7 @@ def _batch_reg(self, chunk):
     upleft   = np.concatenate([upleft] * B, 1)
     botright = np.concatenate([botright] * B, 1)
     areas = np.concatenate([area] * B, 1)
-    thetas = np.expand_dims(thetas,-1).reshape([-1,H*W,B,1])
+    thetas = np.expand_dims(thetas,-1).reshape([H*W,B,1])
 
     # value for placeholder at input layer
     inp_feed_val = img

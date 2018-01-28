@@ -7,6 +7,27 @@ def expit_tensor(x):
 
 USE_REG = True
 
+def dot(a, b):
+    """Real dot-product for vectors (batch-size,?)"""
+    return tf.reduce_sum(tf.multiply(a, b), 1, True)
+
+def dotloss(y_true, y_pred):
+    """
+    Dot-product loss between 2 angles
+    Args:
+        y_true: [?,1] the true angle (between 0 and 1)
+        y_pred: [?,1] the predicted angle (between 0 and 1)
+
+    Returns: 1 - dotproduct(v1,v2)
+
+    """
+    a = y_true * 2 * np.pi
+    b = y_pred * 2 * np.pi
+
+    av = tf.concat([tf.cos(a), tf.sin(a)], -1)
+    bv = tf.concat([tf.cos(b), tf.sin(b)], -1)
+    return 1.0 - tf.reduce_sum(dot(av, bv), axis=-1)
+
 
 def arctan_loss(y_true, y_pred):
     a = y_true * 2 * np.pi
@@ -62,6 +83,9 @@ def loss_reg(self, net_out):
     net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (4 + 1 + C + 1)])
     coords = net_out_reshape[:, :, :, :, :4]
     coords = tf.reshape(coords, [-1, H * W, B, 4])
+
+
+    # TODO maybe tanh?
     theta_pred = tf.sigmoid(net_out_reshape[:, :, :, :, -1])
     adjusted_coords_xy = expit_tensor(coords[:, :, :, 0:2])
     adjusted_coords_wh = tf.sqrt(tf.exp(coords[:, :, :, 2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2]))
@@ -70,7 +94,7 @@ def loss_reg(self, net_out):
     adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 4])
     adjusted_c = tf.reshape(adjusted_c, [-1, H * W, B, 1])
 
-    adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 5:-1])
+    adjusted_prob = tf.nn.tanh(net_out_reshape[:, :, :, :, 5:-1])
     adjusted_prob = tf.reshape(adjusted_prob, [-1, H * W, B, C])
 
     adjusted_net_out = tf.concat([adjusted_coords_xy, adjusted_coords_wh, adjusted_c, adjusted_prob], 3)
@@ -93,6 +117,7 @@ def loss_reg(self, net_out):
     best_box = tf.equal(iou, tf.reduce_max(iou, [2], True))
     best_box = tf.to_float(best_box)
     confs = tf.multiply(best_box, _confs)
+    #theta_pred = tf.expand_dims(tf.multiply(tf.reshape(theta_pred,[-1,19*19,B]),confs),-1)
 
     # take care of the weight terms
     conid = snoob * (1. - confs) + sconf * confs
@@ -110,7 +135,7 @@ def loss_reg(self, net_out):
     loss = tf.multiply(loss, wght)
     loss = tf.reshape(loss, [-1, H * W * B * (4 + 1 + C)])
     loss = tf.reduce_sum(loss, 1)
-    L_theta = arctan_loss(_theta,tf.reshape(theta_pred,[-1,19*19,B,1]))
+    L_theta = dotloss(_theta,theta_pred)
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} box loss'.format(m['model']), self.loss)
     angle_loss = 0.5 * tf.reduce_mean(L_theta * _confs)

@@ -28,6 +28,8 @@ def findboxes(self, net_out):
         boxes = box_constructor_cls(meta, net_out)
     return boxes
 
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
 
 def postprocess(self, net_out, im, save=True):
     """
@@ -57,6 +59,8 @@ def postprocess(self, net_out, im, save=True):
         # int(((np.degrees(obj[5]) + 90) % 180) // (180/8))
         if not USE_REG:
             angle = (angle * (180 // 8)) - 90
+        else:
+            angle = sigmoid(angle) * (2 * np.pi)
 
         thick = int((h + w) // 300)
         if self.FLAGS.json:
