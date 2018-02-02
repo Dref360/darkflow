@@ -134,9 +134,7 @@ def find_data(handler, ang_getter, is_train):
     for k in handler.gt_train if is_train else handler.gt_test:
         acc = []
         for (cls, polygons), (ang, mag) in zip(handler.datas[k][1], ang_getter[(is_train, k.split('/')[-1][:-4])]):
-            if mag < 1.:
-                ang = 0.
-            yield (k, (JsonHandler.classes.index(normalize_classes(cls)), ang, polygons))
+            acc.append((JsonHandler.classes.index(normalize_classes(cls)), ang, polygons))
         yield (k,acc)
 
 def mio_tcd_loading(ANN, pick, exclusive=False, mode="train"):

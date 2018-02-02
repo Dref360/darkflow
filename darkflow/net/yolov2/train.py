@@ -86,7 +86,7 @@ def loss_reg(self, net_out):
 
 
     # TODO maybe tanh?
-    theta_pred = tf.sigmoid(net_out_reshape[:, :, :, :, -1])
+    theta_pred = tf.reshape(tf.sigmoid(net_out_reshape[:, :, :, :, -1]),[-1,19*19,5,1])
     adjusted_coords_xy = expit_tensor(coords[:, :, :, 0:2])
     adjusted_coords_wh = tf.sqrt(tf.exp(coords[:, :, :, 2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2]))
     coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)

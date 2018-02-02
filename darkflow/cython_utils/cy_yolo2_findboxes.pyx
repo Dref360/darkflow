@@ -66,7 +66,7 @@ def box_constructor(meta,np.ndarray[float,ndim=3] net_out_in):
     
     cdef:
         float[:, :, :, ::1] net_out = net_out_in.reshape([H, W, B, net_out_in.shape[2]/B])
-        float[:, :, :, ::1] Classes = net_out[:, :, :, 5:]
+        float[:, :, :, ::1] Classes = net_out[:, :, :, 5:-1]
         float[:, :, :, ::1] Bbox_pred =  net_out[:, :, :, :5]
         float[:, :, :] Angle_pred =  net_out[:, :, :, -1]
         float[:, :, :, ::1] probs = np.zeros((H, W, B, C), dtype=np.float32)
