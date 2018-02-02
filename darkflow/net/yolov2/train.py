@@ -9,7 +9,7 @@ USE_REG = True
 
 def dot(a, b):
     """Real dot-product for vectors (batch-size,?)"""
-    return tf.reduce_sum(tf.multiply(a, b), 1, True)
+    return tf.reduce_sum(tf.multiply(a, b), -1, True)
 
 def dotloss(y_true, y_pred):
     """
@@ -24,8 +24,8 @@ def dotloss(y_true, y_pred):
     a = y_true * 2 * np.pi
     b = y_pred * 2 * np.pi
 
-    av = tf.concat([tf.cos(a), tf.sin(a)], -1)
-    bv = tf.concat([tf.cos(b), tf.sin(b)], -1)
+    av = tf.stack([tf.cos(a), tf.sin(a)], -1)
+    bv = tf.stack([tf.cos(b), tf.sin(b)], -1)
     return 1.0 - tf.reduce_sum(dot(av, bv), axis=-1)
 
 
@@ -138,7 +138,7 @@ def loss_reg(self, net_out):
     L_theta = dotloss(_theta,theta_pred)
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} box loss'.format(m['model']), self.loss)
-    angle_loss = 0.5 * tf.reduce_mean(L_theta * _confs)
+    angle_loss = 0.5 * tf.reduce_mean(L_theta * tf.expand_dims(_confs,-1))
     tf.summary.scalar('{} angle loss'.format(m['model']), self.loss)
     self.loss += angle_loss
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)

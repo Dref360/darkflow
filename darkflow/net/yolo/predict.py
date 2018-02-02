@@ -3,6 +3,7 @@ import os
 
 import cv2
 import numpy as np
+import sklearn
 
 from ...cython_utils.cy_yolo_findboxes import yolo_box_constructor
 from ...utils.im_transform import imcv2_recolor, imcv2_affine_trans
@@ -63,7 +64,7 @@ def preprocess(self, im, allobj=None):
     """
     if type(im) is not np.ndarray:
         im = cv2.imread(im)
-
+    H, W, _ = self.meta['inp_size']
     if allobj is not None:  # in training mode
         result = imcv2_affine_trans(im)
         im, dims, trans_param = result
@@ -74,12 +75,22 @@ def preprocess(self, im, allobj=None):
             obj_1_ = obj[1]
             obj[1] = dims[0] - obj[3]
             obj[3] = dims[0] - obj_1_
+            assert abs(obj[5]) <= 1., "DAMNIT"
+            obj[5] = (0.5 - obj[5]) % 1.0
+            obj[5] = rescale_vector(obj[5],H,W,dims[0],dims[1])
         im = imcv2_recolor(im)
 
     im = self.resize_input(im)
     if allobj is None: return im
     return im  # , np.array(im) # for unit testing
 
+def rescale_vector(angle, W, H, w, h):
+    angle = angle * 2 * np.pi
+    fx, fy = float(W) / w, float(H) / h
+
+    vx, vy = fx * np.cos(angle), fy * np.sin(angle)
+    vx, vy = sklearn.preprocessing.normalize([[vx, vy]])[0]
+    return np.arccos(vx) / (2 * np.pi)
 
 def postprocess(self, net_out, im, save=True):
     """
